@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  
+
+  
+  <title>跨域问题详解 | 然诺的博客</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="作为一个前端，在工作中经常会遇到跨域的问题…">
+<meta name="keywords" content="HTML CSS JS 前端 React TS">
+<meta property="og:type" content="article">
+<meta property="og:title" content="跨域问题详解">
+<meta property="og:url" content="https://rannuo.github.io/2018/03/23/cross-origin/index.html">
+<meta property="og:site_name" content="然诺的博客">
+<meta property="og:description" content="作为一个前端，在工作中经常会遇到跨域的问题…">
+<meta property="og:locale" content="default">
+<meta property="og:image" content="https://raw.githubusercontent.com/rannuo/images/master/blog/xhr-cross-origin-error.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/rannuo/images/master/blog/cross-origin-succ.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/rannuo/images/master/blog/jsonp-client.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/rannuo/images/master/blog/jsonp-server.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/rannuo/images/master/blog/cors-server.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/rannuo/images/master/blog/cors-fetch.png">
+<meta property="og:updated_time" content="2018-12-01T16:00:00.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="跨域问题详解">
+<meta name="twitter:description" content="作为一个前端，在工作中经常会遇到跨域的问题…">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/rannuo/images/master/blog/xhr-cross-origin-error.png">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+</html>
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">然诺的博客</a>
+      </h1>
+      
+        <h2 id="subtitle-wrap">
+          <a href="/" id="subtitle">前端技术</a>
+        </h2>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="https://rannuo.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-cross-origin" class="article article-type-post" itemscope="" itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2018/03/23/cross-origin/" class="article-date">
+  <time datetime="2018-03-22T16:00:00.000Z" itemprop="datePublished">2018-03-23</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      跨域问题详解
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>作为一个前端，在工作中经常会遇到跨域的问题…<br><a id="more"></a></p>
+<p>作为一个前端，在工作中经常会遇到跨域的问题，</p>
+<h2 id="什么是跨域"><a href="#什么是跨域" class="headerlink" title="什么是跨域"></a>什么是跨域</h2><p>跨域的正规叫法应该是跨源，跨源相对于同源来说，何谓同源，MDN定义：</p>
+<blockquote>
+<p>如果两个页面的<strong>协议</strong>，<strong>端口</strong>（如果有指定）和<strong>域名</strong>都相同，则两个页面具有相同的源。 </p>
+</blockquote>
+<p>子域名之间是不同源的。在一个页面中，发往另一个源的的请求就叫跨源（跨域，以下皆称跨域）。</p>
+<h2 id="为什么要跨域"><a href="#为什么要跨域" class="headerlink" title="为什么要跨域"></a>为什么要跨域</h2><p>做过服务端的都知道，一个http接口，是没有限制的，谁都可以访问，但是浏览器出于安全考虑，限制了跨域的请求。</p>
+<p>普通情况下，用 XHR 对象请求一个跨域的接口浏览器会直接抛出一个错误：</p>
+<p><img src="https://raw.githubusercontent.com/rannuo/images/master/blog/xhr-cross-origin-error.png" alt="xhr跨域请求的错误"></p>
+<p>其实此时server是正常收到请求，并正常返回：</p>
+<p><img src="https://raw.githubusercontent.com/rannuo/images/master/blog/cross-origin-succ.png" alt="后台正常"></p>
+<p>用 fetch 结果也一样</p>
+<h2 id="如何解决跨域问题"><a href="#如何解决跨域问题" class="headerlink" title="如何解决跨域问题"></a>如何解决跨域问题</h2><h3 id="1-jsonp"><a href="#1-jsonp" class="headerlink" title="1.jsonp"></a>1.jsonp</h3><p>jsonp 就是利用script标签的可跨域请求脚本来实现的<br>在浏览器中添加一个script标签，请求跨域的服务器上的一个接口，一般可以自定义一个callback的参数，</p>
+<p><img src="https://raw.githubusercontent.com/rannuo/images/master/blog/jsonp-client.png" alt="浏览器jsonp"></p>
+<p>服务端这样写</p>
+<p><img src="https://raw.githubusercontent.com/rannuo/images/master/blog/jsonp-server.png" alt="服务端jsonp"></p>
+<h3 id="2-CORS"><a href="#2-CORS" class="headerlink" title="2.CORS"></a>2.CORS</h3><p>服务端在响应的头里指定这个字段 <code>Access-Control-Allow-Origin</code> </p>
+<p><img src="https://raw.githubusercontent.com/rannuo/images/master/blog/cors-server.png" alt="服务端cors"></p>
+<p>则客户端通过fetch或xhr对象请求，就可以拿到请求返回的资源了</p>
+<p><img src="https://raw.githubusercontent.com/rannuo/images/master/blog/cors-fetch.png" alt="fetch-cors"></p>
+<h3 id="3-代理转发"><a href="#3-代理转发" class="headerlink" title="3.代理转发"></a>3.代理转发</h3><p>因为同源策略是浏览器的策略，在后台服务上不存在这个策略，所以我们可以通过后台服务进行转发。<br>前两种解决方案都是需要请求资源的服务端进行一些适配，而这个方法就不需要资源服务端进行任何修改。所以这种方案在使用第三方接口时，是最好用最常用的方案。</p>
+<h2 id="详见MDN"><a href="#详见MDN" class="headerlink" title="详见MDN"></a>详见MDN</h2><p><a href="https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Access_control_CORS" target="_blank" rel="noopener">CORS</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://rannuo.github.io/2018/03/23/cross-origin/" data-id="cjp723c1i0001q4v0k8cx2cha" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2018/12/02/Web-动画的-12-个原则/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          [译] Web 动画的 12 个原则
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2018/01/11/bigNumber/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">js, json 中处理大数</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/css/">css</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/js/">js</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/js/json/">json</a></li></ul></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/animation/">animation</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/js/">js</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/json/">json</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/animation/" style="font-size: 10px;">animation</a> <a href="/tags/js/" style="font-size: 10px;">js</a> <a href="/tags/json/" style="font-size: 10px;">json</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/12/">December 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/03/">March 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/01/">January 2018</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2018/12/02/Web-动画的-12-个原则/">[译] Web 动画的 12 个原则</a>
+          </li>
+        
+          <li>
+            <a href="/2018/03/23/cross-origin/">跨域问题详解</a>
+          </li>
+        
+          <li>
+            <a href="/2018/01/11/bigNumber/">js, json 中处理大数</a>
+          </li>
+        
+          <li>
+            <a href="/2018/01/10/focus-within/">有用的伪类 :focus-within</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2018 Rannuo<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+
+
+  </div>
+</body>
+</html>
